@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT}
+  shutdown: graceful
+spring:
+  security:
+    basic:
+      enable: false
+    ignored: /**
+  application:
+    instance_id: microlog
+    profile: ${SPRING_PROFILES_ACTIVE}
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&enabledTLSProtocols=TLSv1.2
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  liquibase:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&enabledTLSProtocols=TLSv1.2
+    user: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5Dialect
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
