@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.extension.ExtendWith
 import org.kanur.microlog.components.entities.User
 import org.kanur.microlog.components.services.UsersService
-import org.mockito.BDDMockito.given
+import org.mockito.BDDMockito.*
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -43,7 +43,7 @@ class UsersControllerTest {
   }
 
   @Test
-  fun testIndexWithKotlinDSL() {
+  fun testIndex() {
     val testUser = User(id = 42, name = "Test user", email = "testuser@example.test")
     given(usersService.getAll()).willReturn(listOf(testUser))
 
@@ -102,7 +102,7 @@ class UsersControllerTest {
   }
 
   @Test
-  fun testCreate_WithoutEmail() {
+  fun testCreate_WithOnlyName() {
     mockMvc.post("/users") {
       content = mapper.writeValueAsString(mapOf("name" to "Test name"))
       contentType = MediaType.APPLICATION_JSON
@@ -116,7 +116,7 @@ class UsersControllerTest {
             mapOf(
               "code" to 422,
               "message" to "Validation failed",
-              "trace" to mapOf("email" to "Email cannot be blank")
+              "trace" to mapOf("email" to "Email cannot be blank", "password" to "Password is required")
             )
           )
         )
@@ -125,7 +125,7 @@ class UsersControllerTest {
   }
 
   @Test
-  fun testCreate_WithoutName() {
+  fun testCreate_WithOnlyEmail() {
     mockMvc.post("/users") {
       content = mapper.writeValueAsString(mapOf("email" to "testuser@example.test"))
       contentType = MediaType.APPLICATION_JSON
@@ -139,7 +139,99 @@ class UsersControllerTest {
             mapOf(
               "code" to 422,
               "message" to "Validation failed",
-              "trace" to mapOf("name" to "Name cannot be blank")
+              "trace" to mapOf("name" to "Name cannot be blank", "password" to "Password is required")
+            )
+          )
+        )
+      }
+    }
+  }
+
+  @Test
+  fun testCreate_WithoutPasswordConfirmation() {
+    mockMvc.post("/users") {
+      content = mapper.writeValueAsString(
+        mapOf(
+          "name" to "Test name",
+          "email" to "testuser@example.test",
+          "password" to "password"
+        )
+      )
+      contentType = MediaType.APPLICATION_JSON
+      accept = MediaType.APPLICATION_JSON
+    }.andExpect {
+      status { isUnprocessableEntity() }
+      content { contentType(MediaType.APPLICATION_JSON) }
+      content {
+        json(
+          mapper.writeValueAsString(
+            mapOf(
+              "code" to 422,
+              "message" to "Validation failed",
+              "trace" to mapOf("passwordConfirmation" to "Passwords must match")
+            )
+          )
+        )
+      }
+    }
+  }
+
+  @Test
+  fun testCreate_WhenPasswordsMismatch() {
+    mockMvc.post("/users") {
+      content = mapper.writeValueAsString(
+        mapOf(
+          "name" to "Test name",
+          "email" to "testuser@example.test",
+          "password" to "password",
+          "passwordConfirmation" to "drowssap"
+        )
+      )
+      contentType = MediaType.APPLICATION_JSON
+      accept = MediaType.APPLICATION_JSON
+    }.andExpect {
+      status { isUnprocessableEntity() }
+      content { contentType(MediaType.APPLICATION_JSON) }
+      content {
+        json(
+          mapper.writeValueAsString(
+            mapOf(
+              "code" to 422,
+              "message" to "Validation failed",
+              "trace" to mapOf("passwordConfirmation" to "Passwords must match")
+            )
+          )
+        )
+      }
+    }
+  }
+
+  @Test
+  fun testCreate_WhenInputIsValid() {
+    val input = mapOf(
+      "name" to "Test name",
+      "email" to "testuser@example.test",
+      "password" to "password",
+      "passwordConfirmation" to "password"
+    )
+    val testUser = User(id = 42, name = input["name"]!!, email = input["email"]!!)
+    given(usersService.create(argThat { arg -> arg?.name == input["name"] && arg?.email == input["email"] })).willReturn(
+      testUser
+    )
+
+    mockMvc.post("/users") {
+      content = mapper.writeValueAsString(input)
+      contentType = MediaType.APPLICATION_JSON
+      accept = MediaType.APPLICATION_JSON
+    }.andExpect {
+      status { isCreated() }
+      content { contentType(MediaType.APPLICATION_JSON) }
+      content {
+        json(
+          mapper.writeValueAsString(
+            mapOf(
+              "name" to "Test name",
+              "email" to "testuser@example.test"
             )
           )
         )

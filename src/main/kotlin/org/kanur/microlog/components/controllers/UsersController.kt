@@ -8,7 +8,6 @@ import org.kanur.microlog.components.services.UsersService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -19,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.sql.SQLIntegrityConstraintViolationException
@@ -36,6 +36,8 @@ class UsersController {
   }
 
   @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  @ResponseBody
   fun create(@Valid @RequestBody attrs: UserCreateAttrs): User {
     return service.create(attrs)
   }
@@ -63,7 +65,9 @@ class UsersController {
   fun handleRequestValidationFailure(ex: MethodArgumentNotValidException): ApiError {
     val errors: MutableMap<String, String> = mutableMapOf()
     ex.bindingResult.allErrors.forEach { error ->
-      errors[(error as FieldError).field] = error.defaultMessage ?: "Message not found"
+      if (error is FieldError) {
+        errors[error.field] = error.defaultMessage ?: "Message not found"
+      }
     }
 
     return ApiError(

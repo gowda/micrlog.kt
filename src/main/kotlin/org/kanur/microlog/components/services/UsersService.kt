@@ -23,8 +23,8 @@ class UsersService {
     return repository.findAll()
   }
 
-  fun create(attrs: UserCreateAttrs): User {
-    return repository.save(User.from(attrs))
+  fun create(attrs: UserCreateAttrs?): User {
+    return repository.save(User.from(attrs!!))
   }
 
   fun update(id: Long, attrs: UserUpdateAttrs?): User {
